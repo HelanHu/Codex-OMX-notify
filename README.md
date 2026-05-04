@@ -2,16 +2,17 @@
 
 Windows task-complete notifications for **Codex CLI** and **oh-my-codex (OMX)** running in WSL.
 
-It shows a Windows popup + sound when an agent finishes — but stays quiet when you are already looking at the same Windows Terminal tab.
+It shows a Windows notification + sound when an agent finishes — but stays quiet when you are already looking at the same Windows Terminal tab.
 
 ## Features
 
 - **Codex + OMX support** — works with Codex `Stop` hooks and OMX `session-end` / `stop` notifications.
-- **Windows Toast notifications** — default backend uses BurntToast via PowerShell 7 and appears in the Windows notification center.
+- **Windows notification center Toasts** — default backend uses BurntToast via PowerShell 7, uses `Duration=Long`, and appears in Windows notification center.
 - **Balloon fallback** — simple tray balloon popup remains available with `OMX_WINDOWS_NOTIFY_BACKEND=balloon`.
 - **Focus-aware suppression** — no reminder when the completing task belongs to your currently focused Windows Terminal tab.
 - **Duplicate tab titles handled** — uses Windows Terminal UI Automation `RuntimeId`, not tab title text, as the primary tab identity.
 - **Safe fallback** — if RuntimeId identity is unavailable, falls back to the older short-lived title-marker strategy.
+- **Context-aware text** — titles are `[Codex] Task Complete` / `[OMX] Task Complete`; body text uses the matching session's last user message when available.
 - **Auditable** — every decision is logged as JSONL.
 - **Reversible** — uninstall script removes installed files and notify-owned wrappers.
 
@@ -46,7 +47,7 @@ cd Codex-OMX-notify
 ./install.sh
 ```
 
-`install.sh` lets you choose Toast notification center notifications or a simple balloon popup, copies scripts to `~/.codex/bin`, installs safe `codex` / `omx` launch wrappers, and adds a managed `~/.codex/bin` PATH block to `~/.bashrc`.
+`install.sh` lets you choose Toast notification center notifications or a simple balloon popup, copies scripts to `~/.codex/bin`, installs safe `codex` / `omx` launch wrappers, and adds a managed `~/.codex/bin` PATH block to `~/.bashrc`. If Toast is selected and BurntToast is missing, the installer can run `Install-Module BurntToast -Scope CurrentUser`; if Toast later fails, runtime falls back to the balloon popup.
 
 Open a new shell after installing so future `codex` / `omx` launches can register the current Windows Terminal tab identity.
 
@@ -106,6 +107,17 @@ Add or merge this into `~/.codex/.omx-config.json`:
 4. Different tab or different app means the task is background from your perspective, so you get notified.
 
 This is tab-level by design. It does not try to distinguish panes or multiple agents inside one tab.
+
+
+## Notification content and backend
+
+Default notification content:
+
+- Title: `[Codex] Task Complete` or `[OMX] Task Complete`.
+- Body: the matching session's last user message, truncated by `OMX_WINDOWS_NOTIFY_BODY_MAX_CHARS`; if no safe session match is available, the hook body argument is used.
+
+Default backend is Windows Toast via BurntToast. Toast notifications are submitted with `Duration=Long` and remain available from Windows notification center. Set `OMX_WINDOWS_NOTIFY_BACKEND=balloon` to use the simple tray balloon fallback instead.
+
 
 ## Test
 

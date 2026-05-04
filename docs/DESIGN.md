@@ -31,10 +31,11 @@ The design intentionally fails open to notification. If the code cannot prove th
 
 WSL cannot directly show a native Windows balloon notification. The shell wrapper calls `pwsh.exe` / PowerShell 7 and runs a Windows-side script that uses:
 
-- BurntToast for Windows Toast notification center notifications by default;
+- BurntToast for Windows Toast notification center notifications by default (`Duration=Long`, visible in notification center);
 - `System.Windows.Forms.NotifyIcon` for the fallback tray balloon;
-- `System.Media.SoundPlayer` for the configured sound;
-- a long-duration Toast by default, with a 21-second fallback balloon wait after `ShowBalloonTip(20000)`.
+- `System.Media.SoundPlayer` for the configured sound in balloon mode;
+- silent Toast support when `OMX_WINDOWS_NOTIFY_SOUND=none`;
+- a 21-second fallback balloon wait after `ShowBalloonTip(20000)`.
 
 ### 2. Codex and OMX completion triggers
 

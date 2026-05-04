@@ -119,7 +119,11 @@ RuntimeIds are runtime-scoped and should expire. Do not treat old records as dur
 | --- | --- | --- |
 | `OMX_WINDOWS_NOTIFY_FOCUS_AWARE=0` | notify | Always notify. |
 | `OMX_WINDOWS_NOTIFY_NO_NOTIFY=1` | notify | Dry-run: print/log decision without popup/sound. |
-| `OMX_WINDOWS_NOTIFY_SOUND=none` | notify | Disable sound while keeping popup. |
+| `OMX_WINDOWS_NOTIFY_BACKEND=toast` / `balloon` | notify | Select Windows notification center Toast or tray balloon fallback. Toast is default. |
+| `OMX_WINDOWS_NOTIFY_SOURCE=Codex` / `OMX` / `none` | notify | Prefix completion title, infer from OMX runtime when omitted, or disable source prefix. |
+| `OMX_WINDOWS_NOTIFY_BODY_MAX_CHARS=220` | notify | Truncate the matching session's last user message used as body text. |
+| `OMX_WINDOWS_NOTIFY_USE_HISTORY_BODY=0` | notify | Disable history lookup and use the hook body argument. |
+| `OMX_WINDOWS_NOTIFY_SOUND=none` | notify | Disable sound while keeping popup. For Toast this creates silent Toast audio; for balloon it skips sound playback. |
 | `OMX_WINDOWS_NOTIFY_REGISTER_TAB_IDENTITY=0` | launch wrapper | Skip RuntimeId registration. |
 | `OMX_WINDOWS_NOTIFY_REGISTER_QUIET=0` | registration wrapper | Print registration JSON. |
 | `OMX_WINDOWS_NOTIFY_USE_TITLE_MARKER=0` | notify shell wrapper | Disable title-marker fallback. |
@@ -272,23 +276,23 @@ Tests to run: fixture title fallback tests and live tmux smoke tests when changi
 
 Modification cautions: avoid long-lived or constantly refreshed visible title changes unless the user explicitly accepts that tradeoff.
 
-### Popup and sound
+### Toast notification center, popup, and sound
 
 Purpose: provide the actual Windows reminder.
 
-Entrypoints: `src/windows-notify.ps1` function `Show-Notification`.
+Entrypoints: `src/windows-notify.ps1` functions `Show-Notification`, `Show-ToastNotification`, and `Show-BalloonNotification`.
 
-Files involved: `src/windows-notify.ps1`.
+Files involved: `src/windows-notify.ps1`, `install.sh`.
 
-Inputs/env vars: `OMX_WINDOWS_NOTIFY_SOUND`, PowerShell `System.Windows.Forms`, `%WINDIR%\Media`.
+Inputs/env vars: `OMX_WINDOWS_NOTIFY_BACKEND`, `OMX_WINDOWS_NOTIFY_SOUND`, BurntToast, PowerShell `System.Windows.Forms`, `%WINDIR%\Media`.
 
 Runtime data written: none.
 
-Decision/failure behavior: missing sound file falls back to system asterisk. `Sound=none` suppresses sound but not popup.
+Decision/failure behavior: Toast is attempted first when backend is `toast`; if BurntToast import/submission fails, the script falls back to balloon. Toast uses `Duration=Long` and notification-center persistence. Balloon uses `ShowBalloonTip(20000)` plus a 21-second wait. Missing balloon sound file falls back to system asterisk. `Sound=none` suppresses Toast audio or balloon sound without suppressing the popup.
 
-Tests to run: manual smoke test with visible popup and dry-run tests for decision logic.
+Tests to run: manual smoke test with visible Toast, dry-run tests for decision logic, and PowerShell parser checks.
 
-Modification cautions: keep dry-run mode side-effect free.
+Modification cautions: keep dry-run mode side-effect free and preserve BurntToast fallback behavior.
 
 ### JSONL decision logging
 
