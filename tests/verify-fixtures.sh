@@ -135,3 +135,38 @@ run_case different-tab notify terminal_tab_mismatch "$tmpdir/terminal.json" tab-
 run_case same-tab suppress same_terminal_tab "$tmpdir/terminal.json" tab-a
 run_case marker-mismatch notify terminal_tab_mismatch "$tmpdir/terminal.json" omx-notify-marker-not-selected
 run_case_without_generated_marker no-strong-key notify no_strong_target_key "$tmpdir/terminal.json"
+
+cat > "$tmpdir/history.jsonl" <<'JSONL'
+{"session_id":"other-session","ts":1,"text":"wrong other session prompt"}
+{"session_id":"history-session","ts":2,"text":"right session prompt should be selected and truncated"}
+JSONL
+
+output="$(OMX_WINDOWS_NOTIFY_NO_NOTIFY=1 \
+  OMX_WINDOWS_NOTIFY_USE_TITLE_MARKER=0 \
+  OMX_WINDOWS_NOTIFY_FOREGROUND_FIXTURE_JSON="$tmpdir/nonterminal.json" \
+  OMX_WINDOWS_NOTIFY_HISTORY_PATH="$tmpdir/history.jsonl" \
+  bash "$repo_dir/src/windows-notify.sh" stop hook-body "" "$HOME")"
+node -e '
+  const rec = JSON.parse(process.argv[1]);
+  if (rec.body !== "hook-body") {
+    console.error(`FAIL no-session-body-fallback: ${rec.body}`);
+    process.exit(1);
+  }
+  console.log("PASS no-session-body-fallback");
+' "$output"
+
+output="$(printf '%s' '{"session_id":"history-session"}' | env \
+  OMX_WINDOWS_NOTIFY_NO_NOTIFY=1 \
+  OMX_WINDOWS_NOTIFY_USE_TITLE_MARKER=0 \
+  OMX_WINDOWS_NOTIFY_FOREGROUND_FIXTURE_JSON="$tmpdir/nonterminal.json" \
+  OMX_WINDOWS_NOTIFY_HISTORY_PATH="$tmpdir/history.jsonl" \
+  OMX_WINDOWS_NOTIFY_BODY_MAX_CHARS=22 \
+  bash "$repo_dir/src/windows-notify.sh" stop hook-body "" "$HOME")"
+node -e '
+  const rec = JSON.parse(process.argv[1]);
+  if (!rec.body.startsWith("right session prompt") || !rec.body.endsWith("…")) {
+    console.error(`FAIL stdin-session-body: ${rec.body}`);
+    process.exit(1);
+  }
+  console.log("PASS stdin-session-body");
+' "$output"

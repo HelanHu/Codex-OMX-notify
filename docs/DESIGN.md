@@ -38,7 +38,7 @@ WSL cannot directly show a native Windows balloon notification. The shell wrappe
 
 ### 2. Codex and OMX completion triggers
 
-The repo provides the notification command. The user's Codex/OMX configuration decides when to call it. Current completion notifications use title `Task Complete`; the body is resolved from the last user message in `~/.codex/history.jsonl`, truncated to a practical length, with the hook body as fallback.
+The repo provides the notification command. The user's Codex/OMX configuration decides when to call it. Current completion notifications use title `Task Complete`; the body is resolved from the last user message for the matching session in `~/.codex/history.jsonl`, truncated to a practical length, with the hook body as fallback. The script also parses Codex hook stdin JSON for `session_id` / `thread_id`; it does not fall back to another session's global latest prompt when no session identity is available.
 
 Recommended trigger surfaces:
 

@@ -161,6 +161,7 @@ Useful reasons:
 | `OMX_WINDOWS_NOTIFY_BACKEND=balloon` | Use the legacy tray balloon popup. |
 | `OMX_WINDOWS_NOTIFY_BODY_MAX_CHARS=220` | Max characters from the last user message shown in the notification body. |
 | `OMX_WINDOWS_NOTIFY_USE_HISTORY_BODY=0` | Disable last-user-message body lookup and use the hook body argument instead. |
+| `OMX_WINDOWS_NOTIFY_SESSION_CANDIDATES=...` | Optional newline/space-separated session ids to match against `~/.codex/history.jsonl`. Normally parsed from hook stdin or args. |
 | `OMX_WINDOWS_NOTIFY_SOUND='Windows Notify Calendar.wav'` | Balloon backend sound; use `none` for silent notification. Toast uses the Windows default unless `none` is set. |
 | `OMX_WINDOWS_NOTIFY_REGISTER_TAB_IDENTITY=0` | Disable launch-time RuntimeId registration. |
 | `OMX_WINDOWS_NOTIFY_USE_TITLE_MARKER=0` | Disable title-marker fallback. |

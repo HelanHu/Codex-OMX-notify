@@ -190,7 +190,7 @@ Entrypoints: user-managed `~/.codex/hooks.json`, `~/.codex/.omx-config.json`, an
 
 Files involved: `README.md`, `templates/omx-config.notifications.json`, `src/windows-notify.sh`.
 
-Inputs/env vars: Codex `CODEX_THREAD_ID`, current `PWD`, OMX template values `{{event}}`, `{{instruction}}`, `{{sessionId}}`, `{{projectPath}}`.
+Inputs/env vars: Codex hook stdin JSON plus optional `CODEX_THREAD_ID`, `CODEX_SESSION_ID`, current `PWD`, OMX template values `{{event}}`, `{{instruction}}`, `{{sessionId}}`, `{{projectPath}}`. Body lookup must match a known session id in `~/.codex/history.jsonl`; if no identity is available, use the hook body fallback instead of another session's latest prompt.
 
 Runtime data written: decision log only.
 

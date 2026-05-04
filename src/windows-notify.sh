@@ -9,6 +9,40 @@ sound="${5:-${OMX_WINDOWS_NOTIFY_SOUND:-Windows Notify Calendar.wav}}"
 backend="${OMX_WINDOWS_NOTIFY_BACKEND:-toast}"
 max_body_chars="${OMX_WINDOWS_NOTIFY_BODY_MAX_CHARS:-220}"
 
+read_hook_session_candidates() {
+  [ ! -t 0 ] || return 0
+  node -e '
+const fs = require("fs");
+let raw = "";
+try { raw = fs.readFileSync(0, "utf8"); } catch (_) {}
+raw = String(raw || "").trim();
+if (!raw) process.exit(0);
+let payload;
+try { payload = JSON.parse(raw); } catch (_) { process.exit(0); }
+const wanted = new Set(["session_id", "sessionId", "thread_id", "threadId", "codex_session_id", "native_session_id", "nativeSessionId"]);
+const out = [];
+function add(value) {
+  value = String(value || "").trim();
+  if (value && !out.includes(value)) out.push(value);
+}
+function visit(value, depth = 0) {
+  if (!value || typeof value !== "object" || depth > 4) return;
+  if (Array.isArray(value)) {
+    for (const item of value) visit(item, depth + 1);
+    return;
+  }
+  for (const [key, item] of Object.entries(value)) {
+    if (wanted.has(key)) add(item);
+    if (item && typeof item === "object") visit(item, depth + 1);
+  }
+}
+visit(payload);
+process.stdout.write(out.join("\n"));
+' 2>/dev/null || true
+}
+
+hook_session_candidates="${OMX_WINDOWS_NOTIFY_SESSION_CANDIDATES:-$(read_hook_session_candidates)}"
+
 resolve_last_user_message() {
   case "${OMX_WINDOWS_NOTIFY_USE_HISTORY_BODY:-1}" in
     0|false|False|FALSE|no|No|NO|off|Off|OFF)
@@ -19,7 +53,8 @@ resolve_last_user_message() {
   local history_path="${OMX_WINDOWS_NOTIFY_HISTORY_PATH:-${CODEX_HOME:-$HOME/.codex}/history.jsonl}"
   [ -f "$history_path" ] || return 1
 
-  python3 - "$history_path" "$max_body_chars" "$session_id" "${CODEX_THREAD_ID:-}" <<'PYBODY'
+  # shellcheck disable=SC2086
+  python3 - "$history_path" "$max_body_chars" "$session_id" "${CODEX_THREAD_ID:-}" "${CODEX_SESSION_ID:-}" "${SESSION_ID:-}" $hook_session_candidates <<'PYBODY'
 import json
 import sys
 from pathlib import Path
@@ -36,7 +71,6 @@ for value in sys.argv[3:]:
         candidates.append(value)
 
 last_exact = None
-last_any = None
 try:
     with history_path.open('r', encoding='utf-8', errors='replace') as handle:
         for line in handle:
@@ -47,14 +81,13 @@ try:
             text = str(record.get('text') or '').strip()
             if not text:
                 continue
-            last_any = text
             record_session = str(record.get('session_id') or '').strip()
             if candidates and record_session in candidates:
                 last_exact = text
 except Exception:
     sys.exit(1)
 
-text = last_exact or (last_any if not candidates else '')
+text = last_exact or ''
 if not text:
     sys.exit(1)
 text = ' '.join(text.split())
