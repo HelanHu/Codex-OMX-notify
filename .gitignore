@@ -1,0 +1,16 @@
+# Runtime / diagnostics
+*.log
+*.jsonl
+tab-identities.json
+notify-decisions.jsonl
+
+# Local scratch
+/tmp/
+*.tmp
+*.bak
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

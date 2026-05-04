@@ -1,0 +1,20 @@
+{
+  "notifications": {
+    "enabled": true,
+    "verbosity": "session",
+    "idleCooldownSeconds": 60,
+    "reply": {
+      "enabled": false
+    },
+    "custom_cli_command": {
+      "enabled": true,
+      "command": "bash ~/.codex/bin/windows-notify.sh {{event}} {{instruction}} {{sessionId}} {{projectPath}}",
+      "timeout": 15000,
+      "instruction": "任务完成提醒：{{event}}",
+      "events": [
+        "session-end",
+        "stop"
+      ]
+    }
+  }
+}
