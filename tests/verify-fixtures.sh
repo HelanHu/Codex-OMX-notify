@@ -191,3 +191,46 @@ node -e '
   }
   console.log("PASS omx-title-prefix");
 ' "$output"
+
+output="$(env -u OMX_WINDOWS_NOTIFY_SOURCE -u OMX_SESSION_ID -u OMX_ENTRY_PATH \
+  OMX_WINDOWS_NOTIFY_NO_NOTIFY=1 \
+  OMX_WINDOWS_NOTIFY_FOCUS_AWARE=0 \
+  OMX_WINDOWS_NOTIFY_FOREGROUND_FIXTURE_JSON="$tmpdir/nonterminal.json" \
+  bash "$repo_dir/src/windows-notify.sh" stop body session "$HOME")"
+node -e '
+  const rec = JSON.parse(process.argv[1]);
+  if (rec.title !== "[Codex] Task Complete") {
+    console.error(`FAIL inferred-codex-title-prefix: ${rec.title}`);
+    process.exit(1);
+  }
+  console.log("PASS inferred-codex-title-prefix");
+' "$output"
+
+output="$(env -u OMX_WINDOWS_NOTIFY_SOURCE \
+  OMX_SESSION_ID=omx-fixture \
+  OMX_WINDOWS_NOTIFY_NO_NOTIFY=1 \
+  OMX_WINDOWS_NOTIFY_FOCUS_AWARE=0 \
+  OMX_WINDOWS_NOTIFY_FOREGROUND_FIXTURE_JSON="$tmpdir/nonterminal.json" \
+  bash "$repo_dir/src/windows-notify.sh" stop body session "$HOME")"
+node -e '
+  const rec = JSON.parse(process.argv[1]);
+  if (rec.title !== "[OMX] Task Complete") {
+    console.error(`FAIL inferred-omx-title-prefix: ${rec.title}`);
+    process.exit(1);
+  }
+  console.log("PASS inferred-omx-title-prefix");
+' "$output"
+
+output="$(OMX_WINDOWS_NOTIFY_NO_NOTIFY=1 \
+  OMX_WINDOWS_NOTIFY_FOCUS_AWARE=0 \
+  OMX_WINDOWS_NOTIFY_SOURCE=none \
+  OMX_WINDOWS_NOTIFY_FOREGROUND_FIXTURE_JSON="$tmpdir/nonterminal.json" \
+  bash "$repo_dir/src/windows-notify.sh" stop body session "$HOME")"
+node -e '
+  const rec = JSON.parse(process.argv[1]);
+  if (rec.title !== "Task Complete") {
+    console.error(`FAIL disabled-title-prefix: ${rec.title}`);
+    process.exit(1);
+  }
+  console.log("PASS disabled-title-prefix");
+' "$output"

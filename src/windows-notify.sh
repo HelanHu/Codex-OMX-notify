@@ -97,13 +97,38 @@ print(text)
 PYBODY
 }
 
-normalize_notify_source() {
-  local source="${OMX_WINDOWS_NOTIFY_SOURCE:-}"
+normalize_notify_source_value() {
+  local source="$1"
   case "$source" in
+    ''|0|false|False|FALSE|no|No|NO|none|None|NONE|off|Off|OFF) printf '' ;;
     omx|OMX|OhMyCodex|oh-my-codex|ohmycodex) printf 'OMX' ;;
     codex|Codex|CODEX) printf 'Codex' ;;
     *) printf '%s' "$source" ;;
   esac
+}
+
+infer_notify_source() {
+  if [ -n "${OMX_SESSION_ID:-}" ] || [ -n "${OMX_ENTRY_PATH:-}" ]; then
+    printf 'OMX'
+    return
+  fi
+  case "${session_id:-}" in
+    omx-*) printf 'OMX'; return ;;
+  esac
+  case "${event_name:-}" in
+    session-*|omx:*) printf 'OMX'; return ;;
+  esac
+  printf 'Codex'
+}
+
+normalize_notify_source() {
+  local source
+  if [ "${OMX_WINDOWS_NOTIFY_SOURCE+x}" = "x" ]; then
+    source="$(normalize_notify_source_value "${OMX_WINDOWS_NOTIFY_SOURCE:-}")"
+  else
+    source="$(infer_notify_source)"
+  fi
+  printf '%s' "$source"
 }
 
 resolve_notify_title() {

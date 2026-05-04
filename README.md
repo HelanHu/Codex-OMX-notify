@@ -157,7 +157,7 @@ Useful reasons:
 | --- | --- |
 | `OMX_WINDOWS_NOTIFY_FOCUS_AWARE=0` | Disable focus-aware suppression. |
 | `OMX_WINDOWS_NOTIFY_NO_NOTIFY=1` | Dry-run: log/print without popup or sound. |
-| `OMX_WINDOWS_NOTIFY_SOURCE=Codex` / `OMX` | Prefix the title as `[Codex] Task Complete` or `[OMX] Task Complete`. |
+| `OMX_WINDOWS_NOTIFY_SOURCE=Codex` / `OMX` | Prefix the title as `[Codex] Task Complete` or `[OMX] Task Complete`; when omitted, the script infers OMX from `OMX_SESSION_ID` / `OMX_ENTRY_PATH`, otherwise Codex. Use `none` to disable the prefix. |
 | `OMX_WINDOWS_NOTIFY_BACKEND=toast` | Use Windows Toast notification center notifications. Default. |
 | `OMX_WINDOWS_NOTIFY_BACKEND=balloon` | Use the legacy tray balloon popup. |
 | `OMX_WINDOWS_NOTIFY_BODY_MAX_CHARS=220` | Max characters from the last user message shown in the notification body. |
