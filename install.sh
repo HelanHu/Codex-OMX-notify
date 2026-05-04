@@ -6,6 +6,61 @@ codex_home="${CODEX_HOME:-$HOME/.codex}"
 local_bin="${OMX_WINDOWS_NOTIFY_COMMAND_BIN:-$HOME/.local/bin}"
 mkdir -p "$codex_home/bin" "$local_bin"
 
+choose_backend() {
+  local selected="${OMX_WINDOWS_NOTIFY_BACKEND:-}"
+  if [ -z "$selected" ] && [ -t 0 ]; then
+    printf 'Choose notification backend:\n'
+    printf '  1) Toast notification center notification (recommended, requires BurntToast)\n'
+    printf '  2) Simple balloon popup\n'
+    printf 'Selection [1]: '
+    read -r selected || selected=""
+    case "$selected" in
+      2|balloon|Balloon|BALLOON) selected="balloon" ;;
+      *) selected="toast" ;;
+    esac
+  fi
+  selected="${selected:-toast}"
+  case "$selected" in
+    toast|Toast|TOAST) printf 'toast' ;;
+    balloon|Balloon|BALLOON) printf 'balloon' ;;
+    *) printf 'toast' ;;
+  esac
+}
+
+ensure_burnttoast() {
+  if ! command -v pwsh.exe >/dev/null 2>&1; then
+    printf 'Warning: pwsh.exe not found; Toast backend will fall back to balloon at runtime.\n' >&2
+    return 0
+  fi
+
+  if pwsh.exe -NoProfile -Command 'if (Get-Module -ListAvailable BurntToast) { exit 0 } else { exit 1 }' >/dev/null 2>&1; then
+    printf 'BurntToast already installed for Windows PowerShell.\n'
+    return 0
+  fi
+
+  local answer="${OMX_WINDOWS_NOTIFY_INSTALL_BURNTOAST:-}"
+  if [ -z "$answer" ] && [ -t 0 ]; then
+    printf 'BurntToast PowerShell module is required for Toast notifications.\n'
+    printf 'Install it for the current Windows user now? [y/N]: '
+    read -r answer || answer=""
+  fi
+
+  case "$answer" in
+    y|Y|yes|YES|1|true|TRUE|on|ON)
+      pwsh.exe -NoProfile -Command 'Install-Module -Name BurntToast -Scope CurrentUser -Repository PSGallery -Force -ErrorAction Stop'
+      printf 'BurntToast installed.\n'
+      ;;
+    *)
+      printf 'BurntToast not installed; Toast backend will fall back to balloon at runtime.\n' >&2
+      ;;
+  esac
+}
+
+notify_backend="$(choose_backend)"
+if [ "$notify_backend" = "toast" ]; then
+  ensure_burnttoast
+fi
+
 install -m 0755 "$src_dir/src/windows-notify.sh" "$codex_home/bin/windows-notify.sh"
 install -m 0644 "$src_dir/src/windows-notify.ps1" "$codex_home/bin/windows-notify.ps1"
 install -m 0755 "$src_dir/src/register-tab-identity.sh" "$codex_home/bin/register-tab-identity.sh"
@@ -76,5 +131,7 @@ cat <<MSG
 The wrappers register Windows Terminal RuntimeId identity before launching the real codex/omx.
 They take effect when $codex_home/bin (preferred) or $local_bin appears before the real codex/omx directory in PATH.
 A managed PATH block is present in $bashrc for future interactive bash shells.
+Selected notification backend: $notify_backend
 Current live setup may already contain Stop hook and OMX notify wiring; install.sh does not rewrite hooks.json/config.toml.
+Use OMX_WINDOWS_NOTIFY_BACKEND=toast or OMX_WINDOWS_NOTIFY_BACKEND=balloon to override at runtime.
 MSG

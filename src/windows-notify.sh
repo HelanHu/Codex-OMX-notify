@@ -1,11 +1,74 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-title="${1:-OMX}"
-body="${2:-Task finished}"
+event_name="${1:-stop}"
+input_body="${2:-Task finished}"
 session_id="${3:-}"
 project_path="${4:-}"
 sound="${5:-${OMX_WINDOWS_NOTIFY_SOUND:-Windows Notify Calendar.wav}}"
+backend="${OMX_WINDOWS_NOTIFY_BACKEND:-toast}"
+max_body_chars="${OMX_WINDOWS_NOTIFY_BODY_MAX_CHARS:-220}"
+
+resolve_last_user_message() {
+  case "${OMX_WINDOWS_NOTIFY_USE_HISTORY_BODY:-1}" in
+    0|false|False|FALSE|no|No|NO|off|Off|OFF)
+      return 1
+      ;;
+  esac
+
+  local history_path="${OMX_WINDOWS_NOTIFY_HISTORY_PATH:-${CODEX_HOME:-$HOME/.codex}/history.jsonl}"
+  [ -f "$history_path" ] || return 1
+
+  python3 - "$history_path" "$max_body_chars" "$session_id" "${CODEX_THREAD_ID:-}" <<'PYBODY'
+import json
+import sys
+from pathlib import Path
+
+history_path = Path(sys.argv[1])
+try:
+    max_chars = int(sys.argv[2])
+except Exception:
+    max_chars = 220
+candidates = []
+for value in sys.argv[3:]:
+    value = (value or '').strip()
+    if value and value not in candidates:
+        candidates.append(value)
+
+last_exact = None
+last_any = None
+try:
+    with history_path.open('r', encoding='utf-8', errors='replace') as handle:
+        for line in handle:
+            try:
+                record = json.loads(line)
+            except Exception:
+                continue
+            text = str(record.get('text') or '').strip()
+            if not text:
+                continue
+            last_any = text
+            record_session = str(record.get('session_id') or '').strip()
+            if candidates and record_session in candidates:
+                last_exact = text
+except Exception:
+    sys.exit(1)
+
+text = last_exact or (last_any if not candidates else '')
+if not text:
+    sys.exit(1)
+text = ' '.join(text.split())
+if max_chars > 0 and len(text) > max_chars:
+    text = text[:max(1, max_chars - 1)].rstrip() + '…'
+print(text)
+PYBODY
+}
+
+title="${OMX_WINDOWS_NOTIFY_TITLE:-Task Complete}"
+body="$(resolve_last_user_message 2>/dev/null || true)"
+if [ -z "$body" ]; then
+  body="$input_body"
+fi
 
 focus_aware_enabled=1
 case "${OMX_WINDOWS_NOTIFY_FOCUS_AWARE:-1}" in
@@ -148,6 +211,7 @@ args=(
   -SessionId "$session_id"
   -ProjectPath "$project_path"
   -Sound "$sound"
+  -Backend "$backend"
 )
 
 if [ -n "$title_marker_target" ]; then

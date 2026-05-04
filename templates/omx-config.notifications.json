@@ -10,7 +10,7 @@
       "enabled": true,
       "command": "bash ~/.codex/bin/windows-notify.sh {{event}} {{instruction}} {{sessionId}} {{projectPath}}",
       "timeout": 15000,
-      "instruction": "任务完成提醒：{{event}}",
+      "instruction": "Task Complete",
       "events": [
         "session-end",
         "stop"

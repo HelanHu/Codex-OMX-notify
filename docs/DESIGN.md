@@ -31,13 +31,14 @@ The design intentionally fails open to notification. If the code cannot prove th
 
 WSL cannot directly show a native Windows balloon notification. The shell wrapper calls `pwsh.exe` / PowerShell 7 and runs a Windows-side script that uses:
 
-- `System.Windows.Forms.NotifyIcon` for the tray balloon;
+- BurntToast for Windows Toast notification center notifications by default;
+- `System.Windows.Forms.NotifyIcon` for the fallback tray balloon;
 - `System.Media.SoundPlayer` for the configured sound;
-- an 11-second wait after `ShowBalloonTip(10000)` so the balloon remains visible long enough before the tray icon is disposed.
+- a long-duration Toast by default, with a 21-second fallback balloon wait after `ShowBalloonTip(20000)`.
 
 ### 2. Codex and OMX completion triggers
 
-The repo provides the notification command. The user's Codex/OMX configuration decides when to call it.
+The repo provides the notification command. The user's Codex/OMX configuration decides when to call it. Current completion notifications use title `Task Complete`; the body is resolved from the last user message in `~/.codex/history.jsonl`, truncated to a practical length, with the hook body as fallback.
 
 Recommended trigger surfaces:
 

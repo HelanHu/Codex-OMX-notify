@@ -4,6 +4,7 @@ param(
   [string]$SessionId = '',
   [string]$ProjectPath = '',
   [string]$Sound = 'Windows Notify Calendar.wav',
+  [string]$Backend = 'toast',
   [switch]$NoNotify,
   [switch]$DisableFocusAware,
   [string]$TargetTab = '',
@@ -40,6 +41,13 @@ if ($env:OMX_WINDOWS_NOTIFY_NO_NOTIFY -match '^(1|true|yes|on)$') {
 }
 if ($env:OMX_WINDOWS_NOTIFY_FOCUS_AWARE -match '^(0|false|no|off)$') {
   $DisableFocusAware = $true
+}
+if (-not [string]::IsNullOrWhiteSpace($env:OMX_WINDOWS_NOTIFY_BACKEND)) {
+  $Backend = $env:OMX_WINDOWS_NOTIFY_BACKEND
+}
+$Backend = ([string]$Backend).Trim().ToLowerInvariant()
+if ($Backend -notin @('toast', 'balloon')) {
+  $Backend = 'toast'
 }
 
 Add-Type @"
@@ -491,8 +499,8 @@ function Write-NotifyDecisionLog([object]$record) {
   }
 }
 
-function Show-Notification {
-  param([string]$NotifyTitle, [string]$NotifyBody, [string]$Project, [string]$NotifySound)
+function Show-BalloonNotification {
+  param([string]$NotifyTitle, [string]$NotifyBody, [string]$NotifySound)
 
   Add-Type -AssemblyName System.Windows.Forms
   Add-Type -AssemblyName System.Drawing
@@ -504,7 +512,7 @@ function Show-Notification {
     $notify.Visible = $true
     $notify.BalloonTipIcon = [System.Windows.Forms.ToolTipIcon]::None
     $notify.BalloonTipTitle = $NotifyTitle
-    $notify.BalloonTipText = if ($Project) { "$NotifyBody`n$Project" } else { $NotifyBody }
+    $notify.BalloonTipText = $NotifyBody
 
     if (-not [string]::IsNullOrWhiteSpace($NotifySound) -and $NotifySound.ToLowerInvariant() -ne 'none') {
       $soundPath = Join-Path $env:WINDIR "Media\$NotifySound"
@@ -520,11 +528,50 @@ function Show-Notification {
       }
     }
 
-    $notify.ShowBalloonTip(10000)
-    Start-Sleep -Seconds 11
+    $notify.ShowBalloonTip(20000)
+    Start-Sleep -Seconds 21
   } finally {
     $notify.Dispose()
   }
+}
+
+function Show-ToastNotification {
+  param([string]$NotifyTitle, [string]$NotifyBody, [string]$NotifySound)
+
+  Import-Module BurntToast -ErrorAction Stop
+
+  $line1 = if ([string]::IsNullOrWhiteSpace($NotifyTitle)) { 'Task Complete' } else { $NotifyTitle }
+  $line2 = if ([string]::IsNullOrWhiteSpace($NotifyBody)) { 'Task complete.' } else { $NotifyBody }
+  $text1 = New-BTText -Content $line1
+  $text2 = New-BTText -Content $line2
+  $binding = New-BTBinding -Children $text1, $text2
+  $visual = New-BTVisual -BindingGeneric $binding
+
+  $contentArgs = @{
+    Visual = $visual
+    Duration = 'Long'
+  }
+  if (-not [string]::IsNullOrWhiteSpace($NotifySound) -and $NotifySound.ToLowerInvariant() -eq 'none') {
+    $contentArgs.Audio = New-BTAudio -Silent
+  }
+
+  $content = New-BTContent @contentArgs
+  Submit-BTNotification -Content $content -ErrorAction Stop | Out-Null
+}
+
+function Show-Notification {
+  param([string]$NotifyTitle, [string]$NotifyBody, [string]$NotifySound)
+
+  if ($Backend -eq 'toast') {
+    try {
+      Show-ToastNotification -NotifyTitle $NotifyTitle -NotifyBody $NotifyBody -NotifySound $NotifySound
+      return
+    } catch {
+      Write-Error ("toast_notification_failed_falling_back_to_balloon: " + $_.Exception.Message)
+    }
+  }
+
+  Show-BalloonNotification -NotifyTitle $NotifyTitle -NotifyBody $NotifyBody -NotifySound $NotifySound
 }
 
 $identitySource = 'none'
@@ -583,6 +630,7 @@ $record = [ordered]@{
   sessionId = $SessionId
   projectPath = $ProjectPath
   sound = $Sound
+  backend = $Backend
   focusAware = (-not $DisableFocusAware)
   noNotify = [bool]$NoNotify
   identity = [ordered]@{
@@ -623,5 +671,5 @@ if ($NoNotify) {
 }
 
 if ($decision.action -eq 'notify' -and -not $NoNotify) {
-  Show-Notification -NotifyTitle $Title -NotifyBody $Body -Project $ProjectPath -NotifySound $Sound
+  Show-Notification -NotifyTitle $Title -NotifyBody $Body -NotifySound $Sound
 }

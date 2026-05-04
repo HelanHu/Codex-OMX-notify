@@ -7,7 +7,8 @@ It shows a Windows popup + sound when an agent finishes — but stays quiet when
 ## Features
 
 - **Codex + OMX support** — works with Codex `Stop` hooks and OMX `session-end` / `stop` notifications.
-- **Windows popup + sound** — uses PowerShell 7 (`pwsh.exe`) from WSL.
+- **Windows Toast notifications** — default backend uses BurntToast via PowerShell 7 and appears in the Windows notification center.
+- **Balloon fallback** — simple tray balloon popup remains available with `OMX_WINDOWS_NOTIFY_BACKEND=balloon`.
 - **Focus-aware suppression** — no reminder when the completing task belongs to your currently focused Windows Terminal tab.
 - **Duplicate tab titles handled** — uses Windows Terminal UI Automation `RuntimeId`, not tab title text, as the primary tab identity.
 - **Safe fallback** — if RuntimeId identity is unavailable, falls back to the older short-lived title-marker strategy.
@@ -20,6 +21,7 @@ It shows a Windows popup + sound when an agent finishes — but stays quiet when
 - Windows Terminal recommended
 - PowerShell 7 available as `pwsh.exe`
 - Codex CLI and/or oh-my-codex installed
+- Optional but recommended for Toast: BurntToast PowerShell module; `install.sh` can install it for the current Windows user.
 
 
 ## For AI agents
@@ -44,7 +46,7 @@ cd Codex-OMX-notify
 ./install.sh
 ```
 
-`install.sh` copies scripts to `~/.codex/bin`, installs safe `codex` / `omx` launch wrappers, and adds a managed `~/.codex/bin` PATH block to `~/.bashrc`.
+`install.sh` lets you choose Toast notification center notifications or a simple balloon popup, copies scripts to `~/.codex/bin`, installs safe `codex` / `omx` launch wrappers, and adds a managed `~/.codex/bin` PATH block to `~/.bashrc`.
 
 Open a new shell after installing so future `codex` / `omx` launches can register the current Windows Terminal tab identity.
 
@@ -89,7 +91,7 @@ Add or merge this into `~/.codex/.omx-config.json`:
       "enabled": true,
       "command": "bash ~/.codex/bin/windows-notify.sh {{event}} {{instruction}} {{sessionId}} {{projectPath}}",
       "timeout": 15000,
-      "instruction": "Task complete: {{event}}",
+      "instruction": "Task Complete",
       "events": ["session-end", "stop"]
     }
   }
@@ -114,10 +116,10 @@ OMX_WINDOWS_NOTIFY_NO_NOTIFY=1 \
   bash ~/.codex/bin/windows-notify.sh stop 'notify dry run' dry-run "$HOME"
 ```
 
-Visible popup + sound:
+Visible Toast notification:
 
 ```bash
-bash ~/.codex/bin/windows-notify.sh stop 'notify smoke test' smoke "$HOME"
+bash ~/.codex/bin/windows-notify.sh stop 'Task Complete' smoke "$HOME"
 ```
 
 Run fixture tests from the repo:
@@ -155,7 +157,11 @@ Useful reasons:
 | --- | --- |
 | `OMX_WINDOWS_NOTIFY_FOCUS_AWARE=0` | Disable focus-aware suppression. |
 | `OMX_WINDOWS_NOTIFY_NO_NOTIFY=1` | Dry-run: log/print without popup or sound. |
-| `OMX_WINDOWS_NOTIFY_SOUND='Windows Notify Calendar.wav'` | Pick a `%WINDIR%\Media` sound; use `none` for silent popup. |
+| `OMX_WINDOWS_NOTIFY_BACKEND=toast` | Use Windows Toast notification center notifications. Default. |
+| `OMX_WINDOWS_NOTIFY_BACKEND=balloon` | Use the legacy tray balloon popup. |
+| `OMX_WINDOWS_NOTIFY_BODY_MAX_CHARS=220` | Max characters from the last user message shown in the notification body. |
+| `OMX_WINDOWS_NOTIFY_USE_HISTORY_BODY=0` | Disable last-user-message body lookup and use the hook body argument instead. |
+| `OMX_WINDOWS_NOTIFY_SOUND='Windows Notify Calendar.wav'` | Balloon backend sound; use `none` for silent notification. Toast uses the Windows default unless `none` is set. |
 | `OMX_WINDOWS_NOTIFY_REGISTER_TAB_IDENTITY=0` | Disable launch-time RuntimeId registration. |
 | `OMX_WINDOWS_NOTIFY_USE_TITLE_MARKER=0` | Disable title-marker fallback. |
 

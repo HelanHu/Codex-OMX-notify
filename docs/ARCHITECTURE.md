@@ -202,19 +202,19 @@ Modification cautions: agents should merge snippets into existing config instead
 
 ### WSL to PowerShell bridge
 
-Purpose: run Windows UI Automation and NotifyIcon code from WSL reliably.
+Purpose: run Windows UI Automation, BurntToast Toast notifications, and fallback NotifyIcon balloon code from WSL reliably.
 
 Entrypoints: `src/windows-notify.sh`, `src/register-tab-identity.sh`.
 
 Files involved: both shell wrappers plus their matching `.ps1` files.
 
-Inputs/env vars: `pwsh.exe` on PATH, WSL `wslpath`, Windows `%LOCALAPPDATA%`.
+Inputs/env vars: `pwsh.exe` on PATH, WSL `wslpath`, Windows `%LOCALAPPDATA%`, optional BurntToast module for Toast backend.
 
 Runtime data written: temporary staged PowerShell scripts under `%LOCALAPPDATA%\omx-windows-notify`.
 
-Decision/failure behavior: scripts stage to a Windows-local path first, then invoke `pwsh.exe -NoProfile -ExecutionPolicy Bypass`.
+Decision/failure behavior: scripts stage to a Windows-local path first, then invoke `pwsh.exe -NoProfile -ExecutionPolicy Bypass`. Toast is the default backend; if BurntToast fails, the script falls back to the balloon backend.
 
-Tests to run: shell syntax and PowerShell scriptblock parse checks.
+Tests to run: shell syntax, PowerShell scriptblock parse checks, fixture dry runs, and one visible Toast smoke test when changing the notification backend.
 
 Modification cautions: keep PowerShell 7 as `pwsh.exe`; do not switch to `powershell.exe` unless explicitly requested.
 
