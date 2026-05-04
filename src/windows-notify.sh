@@ -97,7 +97,30 @@ print(text)
 PYBODY
 }
 
-title="${OMX_WINDOWS_NOTIFY_TITLE:-Task Complete}"
+normalize_notify_source() {
+  local source="${OMX_WINDOWS_NOTIFY_SOURCE:-}"
+  case "$source" in
+    omx|OMX|OhMyCodex|oh-my-codex|ohmycodex) printf 'OMX' ;;
+    codex|Codex|CODEX) printf 'Codex' ;;
+    *) printf '%s' "$source" ;;
+  esac
+}
+
+resolve_notify_title() {
+  local base="${OMX_WINDOWS_NOTIFY_TITLE:-Task Complete}"
+  local source
+  source="$(normalize_notify_source)"
+  if [ -n "$source" ]; then
+    case "$base" in
+      \[*\]*) printf '%s' "$base" ;;
+      *) printf '[%s] %s' "$source" "$base" ;;
+    esac
+  else
+    printf '%s' "$base"
+  fi
+}
+
+title="$(resolve_notify_title)"
 body="$(resolve_last_user_message 2>/dev/null || true)"
 if [ -z "$body" ]; then
   body="$input_body"

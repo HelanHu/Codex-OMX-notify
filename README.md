@@ -66,7 +66,7 @@ Add a `Stop` command in `~/.codex/hooks.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "bash -lc 'bash \"$HOME/.codex/bin/windows-notify.sh\" stop \"Codex task complete\" \"${CODEX_THREAD_ID:-}\" \"${PWD:-$HOME}\"'",
+            "command": "bash -lc 'OMX_WINDOWS_NOTIFY_SOURCE=Codex bash \"$HOME/.codex/bin/windows-notify.sh\" stop \"Task Complete\" \"${CODEX_THREAD_ID:-}\" \"${PWD:-$HOME}\"'",
             "timeout": 20
           }
         ]
@@ -89,7 +89,7 @@ Add or merge this into `~/.codex/.omx-config.json`:
     "verbosity": "session",
     "custom_cli_command": {
       "enabled": true,
-      "command": "bash ~/.codex/bin/windows-notify.sh {{event}} {{instruction}} {{sessionId}} {{projectPath}}",
+      "command": "OMX_WINDOWS_NOTIFY_SOURCE=OMX bash ~/.codex/bin/windows-notify.sh {{event}} {{instruction}} {{sessionId}} {{projectPath}}",
       "timeout": 15000,
       "instruction": "Task Complete",
       "events": ["session-end", "stop"]
@@ -113,13 +113,13 @@ Dry run without popup/sound:
 
 ```bash
 OMX_WINDOWS_NOTIFY_NO_NOTIFY=1 \
-  bash ~/.codex/bin/windows-notify.sh stop 'notify dry run' dry-run "$HOME"
+  OMX_WINDOWS_NOTIFY_SOURCE=Codex bash ~/.codex/bin/windows-notify.sh stop 'Task Complete' dry-run "$HOME"
 ```
 
 Visible Toast notification:
 
 ```bash
-bash ~/.codex/bin/windows-notify.sh stop 'Task Complete' smoke "$HOME"
+OMX_WINDOWS_NOTIFY_SOURCE=Codex bash ~/.codex/bin/windows-notify.sh stop 'Task Complete' smoke "$HOME"
 ```
 
 Run fixture tests from the repo:
@@ -157,6 +157,7 @@ Useful reasons:
 | --- | --- |
 | `OMX_WINDOWS_NOTIFY_FOCUS_AWARE=0` | Disable focus-aware suppression. |
 | `OMX_WINDOWS_NOTIFY_NO_NOTIFY=1` | Dry-run: log/print without popup or sound. |
+| `OMX_WINDOWS_NOTIFY_SOURCE=Codex` / `OMX` | Prefix the title as `[Codex] Task Complete` or `[OMX] Task Complete`. |
 | `OMX_WINDOWS_NOTIFY_BACKEND=toast` | Use Windows Toast notification center notifications. Default. |
 | `OMX_WINDOWS_NOTIFY_BACKEND=balloon` | Use the legacy tray balloon popup. |
 | `OMX_WINDOWS_NOTIFY_BODY_MAX_CHARS=220` | Max characters from the last user message shown in the notification body. |

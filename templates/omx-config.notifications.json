@@ -8,7 +8,7 @@
     },
     "custom_cli_command": {
       "enabled": true,
-      "command": "bash ~/.codex/bin/windows-notify.sh {{event}} {{instruction}} {{sessionId}} {{projectPath}}",
+      "command": "OMX_WINDOWS_NOTIFY_SOURCE=OMX bash ~/.codex/bin/windows-notify.sh {{event}} {{instruction}} {{sessionId}} {{projectPath}}",
       "timeout": 15000,
       "instruction": "Task Complete",
       "events": [

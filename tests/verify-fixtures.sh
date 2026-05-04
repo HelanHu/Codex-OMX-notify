@@ -170,3 +170,24 @@ node -e '
   }
   console.log("PASS stdin-session-body");
 ' "$output"
+
+
+output="$(OMX_WINDOWS_NOTIFY_NO_NOTIFY=1   OMX_WINDOWS_NOTIFY_FOCUS_AWARE=0   OMX_WINDOWS_NOTIFY_SOURCE=Codex   OMX_WINDOWS_NOTIFY_FOREGROUND_FIXTURE_JSON="$tmpdir/nonterminal.json"   bash "$repo_dir/src/windows-notify.sh" stop body session "$HOME")"
+node -e '
+  const rec = JSON.parse(process.argv[1]);
+  if (rec.title !== "[Codex] Task Complete") {
+    console.error(`FAIL codex-title-prefix: ${rec.title}`);
+    process.exit(1);
+  }
+  console.log("PASS codex-title-prefix");
+' "$output"
+
+output="$(OMX_WINDOWS_NOTIFY_NO_NOTIFY=1   OMX_WINDOWS_NOTIFY_FOCUS_AWARE=0   OMX_WINDOWS_NOTIFY_SOURCE=OMX   OMX_WINDOWS_NOTIFY_FOREGROUND_FIXTURE_JSON="$tmpdir/nonterminal.json"   bash "$repo_dir/src/windows-notify.sh" stop body session "$HOME")"
+node -e '
+  const rec = JSON.parse(process.argv[1]);
+  if (rec.title !== "[OMX] Task Complete") {
+    console.error(`FAIL omx-title-prefix: ${rec.title}`);
+    process.exit(1);
+  }
+  console.log("PASS omx-title-prefix");
+' "$output"
